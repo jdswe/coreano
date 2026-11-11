@@ -1,6 +1,6 @@
 /* ==========================================
    Coreano. - Aplicación
-   Niveles A1-C2 + Audio de pronunciación
+   Niveles A1-C2 + Audio de pronunciación mejorado
    ========================================== */
 
 (() => {
@@ -12,6 +12,8 @@
   let quizState = { index: 0, score: 0, answers: [] };
   let synth = window.speechSynthesis || null;
   let audioEnabled = false;
+  let voices = [];
+  let koreanVoice = null;
 
   // ---------- DOM ----------
   const $ = (s) => document.querySelector(s);
@@ -43,36 +45,57 @@
     showToast(lang === 'es' ? 'Idioma: Español' : lang === 'en' ? 'Language: English' : '언어: 한국어', 'info');
   });
 
-  // ---------- Inicializar síntesis de voz ----------
-  function initSpeech() {
+  // ---------- Audio / TTS ----------
+  function loadVoices() {
     if (!synth) return;
-    synth.onvoiceschanged = () => {
-      const voices = synth.getVoices();
-      const koVoice = voices.find(v => v.lang.startsWith('ko'));
-      if (koVoice) audioEnabled = true;
-    };
-    if (synth.getVoices().length > 0) {
-      const voices = synth.getVoices();
-      if (voices.find(v => v.lang.startsWith('ko'))) audioEnabled = true;
-    }
+    voices = synth.getVoices();
+    koreanVoice = voices.find(v => v.lang.startsWith('ko')) ||
+                  voices.find(v => v.name.toLowerCase().includes('korean'));
+    audioEnabled = voices.length > 0;
+    console.log('Voces disponibles:', voices.map(v => `${v.name} (${v.lang})`));
+    console.log('Voz coreana:', koreanVoice ? koreanVoice.name : 'No encontrada');
   }
-  initSpeech();
+
+  if (synth) {
+    synth.onvoiceschanged = loadVoices;
+    loadVoices();
+  }
+
+  // Usar Google Translate TTS como fallback (suena más natural, no necesita API key)
+  function speakGoogleTTS(text) {
+    const url = 'https://translate.google.com/translate_tts?' +
+      new URLSearchParams({
+        ie: 'UTF-8',
+        q: text,
+        tl: 'ko',
+        client: 'tw-ob',
+        textlen: text.length
+      });
+    const audio = new Audio(url);
+    audio.play().catch(err => console.warn('Google TTS falló:', err));
+  }
 
   function speak(text, rate = 1.0) {
-    if (!synth || !text) return;
-    if (!audioEnabled) {
-      showToast('Voz de coreano no disponible en este navegador', 'warn');
-      return;
+    if (!text) return;
+
+    // Intentar Web Speech API con voz coreana del sistema
+    if (synth && koreanVoice && audioEnabled) {
+      try {
+        window.speechSynthesis.cancel();
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = 'ko-KR';
+        u.rate = rate;
+        u.volume = 1;
+        u.voice = koreanVoice;
+        synth.speak(u);
+        return;
+      } catch (e) {
+        console.warn('Web Speech falló:', e);
+      }
     }
-    window.speechSynthesis.cancel();
-    const u = new SpeechSynthesisUtterance(text);
-    u.lang = 'ko-KR';
-    u.rate = rate;
-    u.volume = 1;
-    const voices = synth.getVoices();
-    const koVoice = voices.find(v => v.lang.startsWith('ko'));
-    if (koVoice) u.voice = koVoice;
-    synth.speak(u);
+
+    // Fallback a Google Translate TTS
+    speakGoogleTTS(text);
   }
 
   // ---------- Utilidades ----------
@@ -109,7 +132,7 @@
       const card = document.createElement('article');
       card.className = 'lesson-card' + (done ? ' done' : '');
       card.innerHTML = `
-        <div class="lesson-tag" style="background:rgba(0,0,0,0.45);color:${lv.color};border:1px solid rgba(${hexToRgb(lv.color)},0.45);">
+        <div class="lesson-tag" style="background:rgba(0,0,0,0.55);color:${lv.color};border:1px solid rgba(${hexToRgb(lv.color)},0.5);">
           ${labelFor(lesson.level)}
         </div>
         <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:0.35rem;">${escapeHtml(lesson.category)}</div>
@@ -185,7 +208,7 @@
     modalOverlay.classList.remove('open');
     document.body.style.overflow = '';
     currentLessonId = null;
-    window.speechSynthesis.cancel();
+    if (synth) window.speechSynthesis.cancel();
   }
 
   modalClose.addEventListener('click', closeModal);
@@ -230,7 +253,6 @@
   const quizRestart = $('#quiz-restart');
 
   function startQuiz() {
-    // Mezclar preguntas pero mantener 5
     const pool = QUIZ.sort(() => Math.random() - 0.5).slice(0, 5);
     quizState = { index: 0, score: 0, answers: [], pool };
     quizResult.style.display = 'none';
@@ -249,10 +271,7 @@
       b.className = 'quiz-opt';
       b.textContent = opt;
       b.addEventListener('click', () => handleQuizAnswer(i, opt));
-      // Audio pequeño en cada opción
-      b.addEventListener('mouseenter', () => {
-        b.style.borderColor = 'var(--primary)';
-      });
+      b.addEventListener('mouseenter', () => { b.style.borderColor = 'var(--primary)'; });
       quizOptions.appendChild(b);
     });
   }
@@ -274,7 +293,6 @@
       if (idx === i && !correct) b.classList.add('wrong');
     });
 
-    // Leer la respuesta correcta en coreano
     setTimeout(() => {
       speak(q.options[q.answer], 0.85);
     }, 400);
@@ -336,9 +354,7 @@
         <div class="prog-item-title" style="color:${lv.color};">${escapeHtml(lesson.title)}</div>
         <div class="prog-item-sub">${escapeHtml(lesson.es)}</div>
       `;
-      item.addEventListener('click', () => {
-        openModal(lesson);
-      });
+      item.addEventListener('click', () => { openModal(lesson); });
       list.appendChild(item);
     });
   }
