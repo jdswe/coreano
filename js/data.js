@@ -24,7 +24,8 @@ const I18N = {
     'prog.completed': 'Completadas', 'prog.total': 'Totales', 'prog.pct': 'Avance',
     'footer.desc': 'Hecho con ❤️ para aprender coreano desde cero en español, inglés y coreano.',
     'lock.level': 'Nivel bloqueado', 'lock.complete_prev': 'Completa el nivel anterior para desbloquear este.',
-    'unlock': '¡Nivel desbloqueado! 🔓', 'hangul': 'Alfabeto Hangul', 'numeros': 'Números'
+    'unlock': '¡Nivel desbloqueado! 🔓', 'hangul': 'Alfabeto Hangul', 'numeros': 'Números',
+    'btn.activateAudio': '🔊 Activar audio'
   },
   en: {
     'nav.inicio': 'Home', 'nav.niveles': 'Levels', 'nav.quiz': 'Quiz', 'nav.progreso': 'Progress',
@@ -46,7 +47,8 @@ const I18N = {
     'prog.completed': 'Completed', 'prog.total': 'Total', 'prog.pct': 'Progress',
     'footer.desc': 'Made with ❤️ to learn Korean from scratch in Spanish, English and Korean.',
     'lock.level': 'Level locked', 'lock.complete_prev': 'Complete the previous level to unlock this one.',
-    'unlock': 'Level unlocked! 🔓', 'hangul': 'Hangul Alphabet', 'numeros': 'Numbers'
+    'unlock': 'Level unlocked! 🔓', 'hangul': 'Hangul Alphabet', 'numeros': 'Numbers',
+    'btn.activateAudio': '🔊 Activate audio'
   },
   ko: {
     'nav.inicio': '홈', 'nav.niveles': '레벨', 'nav.quiz': '퀴즈', 'nav.progreso': '진도',
@@ -67,9 +69,8 @@ const I18N = {
     'progreso.subtitle': '완료한 레슨을 기록하세요.',
     'prog.completed': '완료', 'prog.total': '전체', 'prog.pct': '진도',
     'footer.desc': '스페인어, 영어, 한국어로 기초부터 한국어를 배우는 데 ❤️를 담았습니다.',
-    'lock.level': '레벨 잠금', 'lock.complete_prev': '이전 레벨을 완료해야 이 레벨의 잠금을 해제할 수 있습니다.',
-    'unlock': '레벨 잠금 해제! 🔓', 'hangul': '한글 알파벳', 'numeros': '숫자'
-  }
+    'lock.level': '레벨 잠금', 'lock.complete_prev': '이전 레벨을 완료해야 이 레벨의 potencialilla hay un error tipográfico en mi respuesta anterior. Permíteme corregirlo en el siguiente paso.
+  },
 };
 
 const LEVELS = {

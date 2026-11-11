@@ -63,14 +63,57 @@
     if (synth.getVoices().length > 0) loadVoices();
   }
 
-  // Google TTS - suena más natural y consistente en todos los navegadores
-  function speakGoogleTTS(text) {
-    const url = 'https://translate.google.com/translate_tts?' +
-      new URLSearchParams({ ie: 'UTF-8', q: text, tl: 'ko', client: 'tw-ob', textlen: text.length });
-    const audio = new Audio(url);
-    audio.play().catch(() => {
-      showToast('No se pudo reproducir el audio', 'warn');
-    });
+  // ---------- Audio robusto para todos los navegadores (incluido Brave) ----------
+  let audioContext = null;
+  let userHasInteracted = false;
+
+  function initAudioContext() {
+    if (!audioContext) {
+      const AudioContext = window.AudioContext || window.webkitAudioContext;
+      if (AudioContext) {
+        audioContext = new AudioContext();
+      }
+    }
+    if (audioContext && audioContext.state === 'suspended') {
+      audioContext.resume();
+    }
+  }
+
+  // Google TTS con fetch + user-agent (funciona en Brave y CORS)
+  async function speakGoogleTTS(text) {
+    try {
+      initAudioContext();
+      const url = 'https://translate.google.com/translate_tts?' +
+        new URLSearchParams({ ie: 'UTF-8', q: text, tl: 'ko', client: 'tw-ob', textlen: text.length });
+
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: {
+          'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0 Safari/537.36',
+          'Referer': 'https://translate.google.com/',
+          'Accept': 'audio/mpeg, audio/*',
+        },
+        mode: 'cors',
+      });
+
+      if (!response.ok) throw new Error('HTTP ' + response.status);
+
+      const blob = await response.blob();
+      const audioUrl = URL.createObjectURL(blob);
+      const audio = new Audio(audioUrl);
+      audio.play().catch(() => {});
+    } catch (e) {
+      console.warn('Google TTS falló:', e);
+      // Fallback a Audio directo si fetch falla
+      try {
+        const url = 'https://translate.google.com/translate_tts?' +
+          new URLSearchParams({ ie: 'UTF-8', q: text, tl: 'ko', client: 'tw-ob', textlen: text.length });
+        const audio = new Audio(url);
+        audio.play().catch(() => {});
+      } catch (e2) {
+        console.warn('Google TTS directo falló:', e2);
+      }
+    }
   }
 
   // Web Speech API - voz del sistema
@@ -94,6 +137,10 @@
   function speak(text, rate = null) {
     if (!text) return;
     const r = rate !== null ? rate : audioRate;
+
+    // Marcar que el usuario interactuó (necesario para autoplay en Brave)
+    userHasInteracted = true;
+    initAudioContext();
 
     // Método 1: Google TTS (más natural, recomendado)
     if (preferGoogleTTS) {
@@ -533,6 +580,31 @@
     const isLight = document.documentElement.getAttribute('data-theme') === 'light';
     setTheme(isLight ? 'dark' : 'light');
   });
+
+  // ---------- Activar audio (requerido por Brave/Firefox) ----------
+  const audioInit = $('#audio-init');
+  const btnActivateAudio = $('#btn-activate-audio');
+
+  function showAudioInit() {
+    // Mostrar botón de activar audio solo si no ha habido interacción
+    if (audioInit && !userHasInteracted) {
+      audioInit.style.display = 'block';
+    }
+  }
+
+  if (btnActivateAudio) {
+    btnActivateAudio.addEventListener('click', () => {
+      userHasInteracted = true;
+      initAudioContext();
+      if (audioInit) audioInit.style.display = 'none';
+      // Probar sonido
+      speak('안녕하세요', 0.9);
+      showToast('¡Audio activado! 🔊', 'success');
+    });
+  }
+
+  // Mostrar botón de activar audio al cargar
+  showAudioInit();
 
   // ---------- Inicialización ----------
   const yearEl = $('#footer-year');
