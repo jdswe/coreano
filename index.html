@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="es" data-theme="light">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Aprende Coreano | Coreano Cero a Avanzado</title>
+  <meta name="description" content="Aprende coreano desde A1 hasta C2 con traducciones en español, inglés y coreano. Sitio bonito, responsivo y con animaciones." />
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Nanum+Gothic:wght@400;700&family=Poppins:wght@300;400;600;700;800&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/style.css" />
+</head>
+<body>
+
+  <div class="cursor-dot"></div>
+  <div class="cursor-outline"></div>
+
+  <nav class="navbar" id="navbar">
+    <div class="nav-container">
+      <a href="#" class="logo" aria-label="Inicio">
+        <span class="logo-icon">🇰🇷</span>
+        <span class="logo-text">Coreano<span class="dot">.</span></span>
+      </a>
+      <div class="nav-menu" id="nav-menu">
+        <a href="#inicio" class="nav-link" data-i18n="nav.inicio">Inicio</a>
+        <a href="#niveles" class="nav-link" data-i18n="nav.niveles">Niveles</a>
+        <a href="#quiz" class="nav-link" data-i18n="nav.quiz">Quiz</a>
+        <a href="#progreso" class="nav-link" data-i18n="nav.progreso">Progreso</a>
+      </div>
+      <div class="nav-actions">
+        <div class="language-switcher" id="language-switcher">
+          <button class="lang-btn active" data-lang="es" aria-label="Español">ES</button>
+          <button class="lang-btn" data-lang="en" aria-label="English">EN</button>
+          <button class="lang-btn" data-lang="ko" aria-label="한국어">KO</button>
+        </div>
+        <button class="nav-toggle" id="nav-toggle" aria-label="Abrir menú">
+          <span class="bar"></span><span class="bar"></span><span class="bar"></span>
+        </button>
+      </div>
+    </div>
+  </nav>
+
+  <section id="inicio" class="hero">
+    <div class="hero-bg">
+      <div class="floating-shape shape-1"></div>
+      <div class="floating-shape shape-2"></div>
+      <div class="floating-shape shape-3"></div>
+      <div class="grid-overlay"></div>
+    </div>
+    <div class="hero-content">
+      <div class="hero-badge" data-i18n="hero.badge">Aprende coreano desde cero</div>
+      <h1 data-i18n="hero.title">Coreano <span class="highlight">A1 a C2</span></h1>
+      <p data-i18n="hero.subtitle">
+        Domina el hangul, la gramática y el vocabulario con lecciones traducidas al español, inglés y coreano.
+      </p>
+      <div class="hero-cta">
+        <a href="#niveles" class="btn btn-primary" data-i18n="hero.start">Empezar ahora</a>
+        <a href="#quiz" class="btn btn-outline" data-i18n="hero.quiz">Hacer un quiz</a>
+      </div>
+      <div class="hero-stats">
+        <div class="stat"><span class="stat-number" data-i18n="stats.lessons">40+</span><span class="stat-label" data-i18n="stats.lessonsLabel">lecciones</span></div>
+        <div class="stat"><span class="stat-number" data-i18n="stats.languages">3</span><span class="stat-label" data-i18n="stats.languagesLabel">idiomas</span></div>
+        <div class="stat"><span class="stat-number" data-i18n="stats.levels">6</span><span class="stat-label" data-i18n="stats.levelsLabel">niveles CEFR</span></div>
+      </div>
+    </div>
+    <a href="#niveles" class="scroll-down" aria-label="Desplazarse hacia abajo"><span>↓</span></a>
+  </section>
+
+  <section id="niveles" class="niveles section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge" data-i18n="niveles.badge">Elige tu nivel</div>
+        <h2 data-i18n="niveles.title">Desde A1 hasta C2</h2>
+        <p data-i18n="niveles.subtitle">
+          Avanza paso a paso siguiendo el Marco Común Europeo. Cada nivel tiene coreano (hangul), romanización, español e inglés.
+        </p>
+      </div>
+
+      <div class="level-filters" role="tablist" aria-label="Niveles CEFR">
+        <button class="filter-btn active" data-level="todos" role="tab" data-i18n="filter.todos">Todos</button>
+        <button class="filter-btn" data-level="a1" role="tab" data-i18n="filter.a1">A1 - Principiante</button>
+        <button class="filter-btn" data-level="a2" role="tab" data-i18n="filter.a2">A2 - Elemental</button>
+        <button class="filter-btn" data-level="b1" role="tab" data-i18n="filter.b1">B1 - Intermedio</button>
+        <button class="filter-btn" data-level="b2" role="tab" data-i18n="filter.b2">B2 - Intermedio Alto</button>
+        <button class="filter-btn" data-level="c1" role="tab" data-i18n="filter.c1">C1 - Avanzado</button>
+        <button class="filter-btn" data-level="c2" role="tab" data-i18n="filter.c2">C2 - Dominio</button>
+      </div>
+
+      <div class="lessons-grid" id="lessons-grid"></div>
+    </div>
+  </section>
+
+  <div class="modal-overlay" id="modal-overlay" aria-hidden="true">
+    <div class="modal" id="lesson-modal">
+      <button class="modal-close" id="modal-close" aria-label="Cerrar lección">✕</button>
+      <div class="modal-header">
+        <span class="lesson-level" id="modal-level"></span>
+        <h2 id="modal-title"></h2>
+      </div>
+      <div class="modal-body">
+        <div class="translation-block">
+          <div class="translation-item hangul"><span class="tr-label" data-i18n="tr.korean">Coreano</span><div class="tr-content" id="modal-hangul" style="font-family:'Nanum Gothic',sans-serif;"></div></div>
+          <div class="translation-item roman"><span class="tr-label" data-i18n="tr.roman">Romanización</span><div class="tr-content" id="modal-roman"></div></div>
+          <div class="translation-item es"><span class="tr-label" data-i18n="tr.spanish">Español</span><div class="tr-content" id="modal-es"></div></div>
+          <div class="translation-item en"><span class="tr-label" data-i18n="tr.english">Inglés</span><div class="tr-content" id="modal-en"></div></div>
+        </div>
+        <div class="lesson-notes" id="modal-notes"></div>
+        <div class="lesson-footer">
+          <div class="modal-mark-wrap">
+            <button class="btn-modal-done" id="modal-mark-done" data-i18n="btn.markDone">Marcar como completada ✓</button>
+          </div>
+          <button class="btn-audio" id="modal-audio" data-i18n="btn.listen" aria-label="Escuchar pronunciación">🔊</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <section id="quiz" class="quiz section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge" data-i18n="quiz.badge">Pon a prueba lo aprendido</div>
+        <h2 data-i18n="quiz.title">Quiz Interactivo</h2>
+        <p data-i18n="quiz.subtitle">Responde y descubre cuánto sabes de coreano.</p>
+      </div>
+      <div class="quiz-card" id="quiz-card">
+        <div class="quiz-question" id="quiz-question"></div>
+        <div class="quiz-options" id="quiz-options"></div>
+        <div class="quiz-feedback" id="quiz-feedback"></div>
+        <div class="quiz-next-wrap"><button class="btn-quiz-next" id="quiz-next" style="display:none;" data-i18n="btn.next">Siguiente pregunta →</button></div>
+      </div>
+      <div class="quiz-result" id="quiz-result" style="display:none;">
+        <h3 id="quiz-score-text"></h3>
+        <button class="btn btn-outline" id="quiz-restart" data-i18n="btn.restart">Intentar de nuevo</button>
+      </div>
+    </div>
+  </section>
+
+  <section id="progreso" class="progreso section">
+    <div class="container">
+      <div class="section-header">
+        <div class="section-badge" data-i18n="progreso.badge">Tu avance</div>
+        <h2 data-i18n="progreso.title">Progreso de Aprendizaje</h2>
+        <p data-i18n="progreso.subtitle">Lleva un registro de las lecciones que completaste.</p>
+      </div>
+      <div class="progress-stats" id="progress-stats">
+        <div class="progress-card"><span class="progress-number" id="prog-completed">0</span><span class="progress-label" data-i18n="prog.completed">Completadas</span></div>
+        <div class="progress-card"><span class="progress-number" id="prog-total">0</span><span class="progress-label" data-i18n="prog.total">Totales</span></div>
+        <div class="progress-card"><span class="progress-number" id="prog-pct">0%</span><span class="progress-label" data-i18n="prog.pct">Avance</span></div>
+      </div>
+      <div class="progress-list" id="progress-list"></div>
+    </div>
+  </section>
+
+  <footer class="footer">
+    <div class="container footer-grid">
+      <div class="footer-brand"><span class="logo-icon">🇰🇷</span><span class="footer-title">Coreano<span class="dot">.</span></span></div>
+      <p data-i18n="footer.desc">Hecho con ❤️ para hispanohablantes y angloparlantes que quieren aprender coreano desde cero.</p>
+      <div class="footer-social"><a href="#" aria-label="YouTube">▶</a><a href="#" aria-label="Instagram">📸</a><a href="#" aria-label="Twitter">🐦</a></div>
+      <div class="footer-copy"><span id="footer-year"></span> Coreano. Todos los derechos reservados.</div>
+    </div>
+  </footer>
+
+  <div class="toast-container" id="toast-container"></div>
+
+  <script src="js/data.js"></script>
+  <script src="js/app.js"></script>
+</body>
+</html>
