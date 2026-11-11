@@ -1,6 +1,6 @@
 /* ==========================================
    Coreano. - Aplicación
-   Niveles A1-C2 + Audio de pronunciación mejorado
+   Niveles A1-C2, desbloqueo secuencial, audio multi-navegador
    ========================================== */
 
 (() => {
@@ -11,9 +11,9 @@
   let completed = new Set(JSON.parse(localStorage.getItem('coreano-completed') || '[]'));
   let quizState = { index: 0, score: 0, answers: [] };
   let synth = window.speechSynthesis || null;
-  let audioEnabled = false;
   let voices = [];
   let koreanVoice = null;
+  let audioEnabled = false;
 
   // ---------- DOM ----------
   const $ = (s) => document.querySelector(s);
@@ -45,41 +45,37 @@
     showToast(lang === 'es' ? 'Idioma: Español' : lang === 'en' ? 'Language: English' : '언어: 한국어', 'info');
   });
 
-  // ---------- Audio / TTS ----------
+  // ---------- Audio multi-navegador ----------
   function loadVoices() {
     if (!synth) return;
     voices = synth.getVoices();
     koreanVoice = voices.find(v => v.lang.startsWith('ko')) ||
-                  voices.find(v => v.name.toLowerCase().includes('korean'));
+                  voices.find(v => v.name.toLowerCase().includes('korean')) ||
+                  voices.find(v => v.lang.startsWith('ko-KR'));
     audioEnabled = voices.length > 0;
-    console.log('Voces disponibles:', voices.map(v => `${v.name} (${v.lang})`));
-    console.log('Voz coreana:', koreanVoice ? koreanVoice.name : 'No encontrada');
+    console.log('Voces:', voices.map(v => `${v.name} (${v.lang})`));
+    console.log('Voz coreana:', koreanVoice ? koreanVoice.name : 'N/A');
   }
 
   if (synth) {
     synth.onvoiceschanged = loadVoices;
     loadVoices();
+    // Si ya hay voces cargadas
+    if (synth.getVoices().length > 0) loadVoices();
   }
 
-  // Usar Google Translate TTS como fallback (suena más natural, no necesita API key)
+  // Fallback Google Translate TTS (funciona en Brave, Chrome, Edge, Firefox, Safari)
   function speakGoogleTTS(text) {
     const url = 'https://translate.google.com/translate_tts?' +
-      new URLSearchParams({
-        ie: 'UTF-8',
-        q: text,
-        tl: 'ko',
-        client: 'tw-ob',
-        textlen: text.length
-      });
+      new URLSearchParams({ ie: 'UTF-8', q: text, tl: 'ko', client: 'tw-ob', textlen: text.length });
     const audio = new Audio(url);
-    audio.play().catch(err => console.warn('Google TTS falló:', err));
+    audio.play().catch(() => {});
   }
 
   function speak(text, rate = 1.0) {
     if (!text) return;
-
-    // Intentar Web Speech API con voz coreana del sistema
-    if (synth && koreanVoice && audioEnabled) {
+    // Intento 1: Web Speech API (Chrome, Edge, Safari, Brave)
+    if (synth && koreanVoice) {
       try {
         window.speechSynthesis.cancel();
         const u = new SpeechSynthesisUtterance(text);
@@ -89,12 +85,9 @@
         u.voice = koreanVoice;
         synth.speak(u);
         return;
-      } catch (e) {
-        console.warn('Web Speech falló:', e);
-      }
+      } catch (e) { console.warn('Web Speech falló:', e); }
     }
-
-    // Fallback a Google Translate TTS
+    // Intento 2: Google Translate TTS (todos los navegadores)
     speakGoogleTTS(text);
   }
 
@@ -117,6 +110,25 @@
     return d.innerHTML;
   }
 
+  // ---------- Nivel desbloqueado ----------
+  function isLevelUnlocked(levelKey) {
+    const lv = LEVELS[levelKey];
+    if (!lv || !lv.unlockAfter) return true; // A1 siempre desbloqueado
+    const prev = LEVELS[lv.unlockAfter];
+    if (!prev) return true;
+    const prevLessons = LESSONS.filter(l => l.level === lv.unlockAfter);
+    if (prevLessons.length === 0) return true;
+    const donePrev = prevLessons.filter(l => completed.has(l.id)).length;
+    return donePrev >= prevLessons.length; // 100% del nivel anterior
+  }
+
+  function getLevelProgress(levelKey) {
+    const lessons = LESSONS.filter(l => l.level === levelKey);
+    if (lessons.length === 0) return { done: 0, total: 0, pct: 0 };
+    const done = lessons.filter(l => completed.has(l.id)).length;
+    return { done, total: lessons.length, pct: Math.round((done / lessons.length) * 100) };
+  }
+
   // ---------- Lecciones ----------
   const lessonsGrid = $('#lessons-grid');
 
@@ -129,37 +141,43 @@
     filtered.forEach((lesson) => {
       const done = completed.has(lesson.id);
       const lv = LEVELS[lesson.level];
+      const unlocked = isLevelUnlocked(lesson.level);
+      const prog = getLevelProgress(lesson.level);
+
       const card = document.createElement('article');
-      card.className = 'lesson-card' + (done ? ' done' : '');
+      card.className = 'lesson-card' + (done ? ' done' : '') + (unlocked ? '' : ' locked');
       card.innerHTML = `
         <div class="lesson-tag" style="background:rgba(0,0,0,0.55);color:${lv.color};border:1px solid rgba(${hexToRgb(lv.color)},0.5);">
           ${labelFor(lesson.level)}
         </div>
-        <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:0.35rem;">${escapeHtml(lesson.category)}</div>
-        <div style="font-family:'Nanum Gothic',sans-serif;font-size:1.35rem;font-weight:800;color:var(--text);margin:0 0 0.4rem;line-height:1.25;">${escapeHtml(lesson.title)}</div>
-        <div style="font-size:0.9rem;color:var(--warning);font-weight:700;margin-bottom:0.6rem;">${escapeHtml(lesson.roman)}</div>
-        <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.55;">${escapeHtml(lesson.es)}</p>
+        ${!unlocked ? '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:2;pointer-events:none;"><div style="font-size:2rem;">🔒</div><div style="font-size:0.75rem;color:#fff;margin-top:0.4rem;">Bloqueado</div></div>' : ''}
+        <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:0.35rem; z-index:1; position:relative;">${escapeHtml(lesson.category)}</div>
+        <div style="font-family:'Nanum Gothic',sans-serif;font-size:1.35rem;font-weight:800;color:var(--text);margin:0 0 0.4rem;line-height:1.25; z-index:1; position:relative;">${escapeHtml(lesson.title)}</div>
+        <div style="font-size:0.9rem;color:var(--warning);font-weight:700;margin-bottom:0.6rem; z-index:1; position:relative;">${escapeHtml(lesson.roman)}</div>
+        <p style="font-size:0.9rem;color:var(--text-muted);margin-bottom:1rem;line-height:1.55; z-index:1; position:relative;">${escapeHtml(lesson.es)}</p>
         <div class="lesson-meta">
           <span>${done ? '✓ ' + t('prog.completed') : 'Pendiente'}</span>
         </div>
-        <div class="lesson-actions">
-          <button class="btn-audio" aria-label="${t('btn.listen')}" data-text="${escapeHtml(lesson.title)}">🔊</button>
+        <div class="lesson-actions" style="z-index:1; position:relative;">
+          <button class="btn-audio" aria-label="${t('btn.listen')}" data-text="${escapeHtml(lesson.title)}" ${!unlocked ? 'disabled' : ''}>🔊</button>
           <span style="flex:1;"></span>
         </div>
       `;
-      card.addEventListener('click', (e) => {
-        if (e.target.closest('.btn-audio')) return;
-        openModal(lesson);
-      });
-      card.querySelector('.btn-audio').addEventListener('click', (e) => {
-        e.stopPropagation();
-        speak(lesson.title, 0.9);
-      });
+      if (unlocked) {
+        card.addEventListener('click', (e) => {
+          if (e.target.closest('.btn-audio')) return;
+          openModal(lesson);
+        });
+        card.querySelector('.btn-audio').addEventListener('click', (e) => {
+          e.stopPropagation();
+          speak(lesson.title, 0.9);
+        });
+      }
       lessonsGrid.appendChild(card);
     });
   }
 
-  // ---------- Nivel / filtros ----------
+  // ---------- Filtros ----------
   $$('.filter-btn').forEach((btn) => {
     btn.addEventListener('click', () => {
       $$('.filter-btn').forEach((b) => b.classList.remove('active'));
@@ -212,16 +230,10 @@
   }
 
   modalClose.addEventListener('click', closeModal);
-  modalOverlay.addEventListener('click', (e) => {
-    if (e.target === modalOverlay) closeModal();
-  });
-  document.addEventListener('keydown', (e) => {
-    if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal();
-  });
+  modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
+  document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal(); });
 
-  modalAudio.addEventListener('click', () => {
-    speak(currentLessonAudioText || modalTitle.textContent, 0.9);
-  });
+  modalAudio.addEventListener('click', () => { speak(currentLessonAudioText || modalTitle.textContent, 0.9); });
 
   modalMarkDone.addEventListener('click', () => {
     if (currentLessonId === null) return;
@@ -232,6 +244,9 @@
       completed.add(currentLessonId);
       localStorage.setItem('coreano-completed', JSON.stringify([...completed]));
       showToast(lang === 'es' ? '¡Lección completada! 🎉' : lang === 'en' ? 'Lesson completed! 🎉' : '레슨 완료! 🎉', 'success');
+
+      // Verificar si se desbloqueó un nuevo nivel
+      checkLevelUnlock();
     }
     renderLessons();
     renderProgress();
@@ -241,6 +256,17 @@
       : t('btn.markDone');
     modalMarkDone.classList.toggle('done', completed.has(currentLessonId));
   });
+
+  function checkLevelUnlock() {
+    Object.entries(LEVELS).forEach(([key, lv]) => {
+      if (lv.unlockAfter && !localStorage.getItem(`coreano-unlocked-${key}`)) {
+        if (isLevelUnlocked(key)) {
+          localStorage.setItem(`coreano-unlocked-${key}`, 'true');
+          showToast(t('unlock') + ' ' + labelFor(key), 'success');
+        }
+      }
+    });
+  }
 
   // ---------- Quiz ----------
   const quizCard = $('#quiz-card');
@@ -271,14 +297,11 @@
       b.className = 'quiz-opt';
       b.textContent = opt;
       b.addEventListener('click', () => handleQuizAnswer(i, opt));
-      b.addEventListener('mouseenter', () => { b.style.borderColor = 'var(--primary)'; });
       quizOptions.appendChild(b);
     });
   }
 
-  function tKeyObj(obj) {
-    return obj[lang] || obj.es || Object.values(obj)[0];
-  }
+  function tKeyObj(obj) { return obj[lang] || obj.es || Object.values(obj)[0]; }
 
   function handleQuizAnswer(i, optText) {
     const q = quizState.pool[quizState.index];
@@ -293,9 +316,7 @@
       if (idx === i && !correct) b.classList.add('wrong');
     });
 
-    setTimeout(() => {
-      speak(q.options[q.answer], 0.85);
-    }, 400);
+    setTimeout(() => { speak(q.options[q.answer], 0.85); }, 400);
 
     quizFeedback.textContent = correct
       ? (lang === 'es' ? '¡Correcto! ✅' : lang === 'en' ? 'Correct! ✅' : '정답입니다! ✅')
@@ -307,9 +328,8 @@
 
   quizNext.addEventListener('click', () => {
     quizState.index++;
-    if (quizState.index >= quizState.pool.length) {
-      showResult();
-    } else {
+    if (quizState.index >= quizState.pool.length) showResult();
+    else {
       quizFeedback.style.display = 'none';
       quizNext.style.display = 'none';
       renderQuiz();
@@ -321,11 +341,9 @@
     quizResult.style.display = 'block';
     const pct = Math.round((quizState.score / quizState.pool.length) * 100);
     quizScoreText.innerHTML =
-      lang === 'es'
-        ? `Obtuviste <strong>${quizState.score}/${quizState.pool.length}</strong> (${pct}%)`
-        : lang === 'en'
-        ? `You scored <strong>${quizState.score}/${quizState.pool.length}</strong> (${pct}%)`
-        : `<strong>${quizState.score}/${quizState.pool.length}</strong>점 (${pct}%)`;
+      lang === 'es' ? `Obtuviste <strong>${quizState.score}/${quizState.pool.length}</strong> (${pct}%)`
+      : lang === 'en' ? `You scored <strong>${quizState.score}/${quizState.pool.length}</strong> (${pct}%)`
+      : `<strong>${quizState.score}/${quizState.pool.length}</strong>점 (${pct}%)`;
     if (pct >= 80) showToast(lang === 'es' ? '¡Excelente resultado! 🌟' : lang === 'en' ? 'Excellent result! 🌟' : '탁월한 결과! 🌟', 'success');
     else if (pct >= 50) showToast(lang === 'es' ? 'Buen trabajo, sigue practicando 💪' : lang === 'en' ? 'Good job, keep practicing 💪' : '잘했어요, 계속 연습하세요 💪', 'info');
     else showToast(lang === 'es' ? 'Ánimo, repasa las lecciones y vuelve a intentarlo 📚' : lang === 'en' ? 'Keep going, review the lessons and try again 📚' : '화이팅! 레슨을 복습하고 다시 도전하세요 📚', 'warn');
@@ -348,13 +366,15 @@
     LESSONS.slice().sort((a, b) => (LEVELS[a.level].order || 0) - (LEVELS[b.level].order || 0) || a.id - b.id).forEach((lesson) => {
       const done = completed.has(lesson.id);
       const lv = LEVELS[lesson.level];
+      const unlocked = isLevelUnlocked(lesson.level);
       const item = document.createElement('div');
-      item.className = 'prog-item ' + (done ? 'done' : 'pending');
+      item.className = 'prog-item ' + (done ? 'done' : unlocked ? 'pending' : 'locked');
       item.innerHTML = `
         <div class="prog-item-title" style="color:${lv.color};">${escapeHtml(lesson.title)}</div>
         <div class="prog-item-sub">${escapeHtml(lesson.es)}</div>
+        ${!unlocked ? '<div style="font-size:0.7rem;color:var(--text-muted);margin-top:4px;">🔒 Bloqueado</div>' : ''}
       `;
-      item.addEventListener('click', () => { openModal(lesson); });
+      if (unlocked) item.addEventListener('click', () => { openModal(lesson); });
       list.appendChild(item);
     });
   }
@@ -414,20 +434,14 @@
     });
     $$('a, button, .lesson-card, .quiz-opt, .lang-btn, .filter-btn, .prog-item').forEach((el) => {
       el.addEventListener('mouseenter', () => {
-        cursorOutline.style.width = '60px';
-        cursorOutline.style.height = '60px';
+        cursorOutline.style.width = '60px'; cursorOutline.style.height = '60px';
         cursorOutline.style.borderColor = 'var(--accent)';
-        cursorDot.style.width = '12px';
-        cursorDot.style.height = '12px';
-        cursorDot.style.background = 'var(--accent)';
+        cursorDot.style.width = '12px'; cursorDot.style.height = '12px'; cursorDot.style.background = 'var(--accent)';
       });
       el.addEventListener('mouseleave', () => {
-        cursorOutline.style.width = '40px';
-        cursorOutline.style.height = '40px';
+        cursorOutline.style.width = '40px'; cursorOutline.style.height = '40px';
         cursorOutline.style.borderColor = 'var(--primary-glow)';
-        cursorDot.style.width = '8px';
-        cursorDot.style.height = '8px';
-        cursorDot.style.background = 'var(--primary)';
+        cursorDot.style.width = '8px'; cursorDot.style.height = '8px'; cursorDot.style.background = 'var(--primary)';
       });
     });
   }

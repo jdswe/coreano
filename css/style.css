@@ -264,6 +264,11 @@ body.cursor-active .cursor-dot, body.cursor-active .cursor-outline { opacity: 1;
 }
 .lesson-card:hover::before { opacity: 1; }
 .lesson-card.done { border-left: 4px solid var(--success); background: rgba(74,222,128,0.12); }
+.lesson-card.locked {
+  opacity: 0.55; filter: grayscale(0.6); pointer-events: none;
+  border-color: var(--border); background: rgba(15, 23, 42, 0.4);
+}
+.prog-item.locked { opacity: 0.5; filter: grayscale(0.6); }
 .lesson-tag {
   position: absolute; top: 1.2rem; right: 1.2rem; font-size: 0.65rem; font-weight: 800;
   text-transform: uppercase; padding: 0.4rem 0.8rem; border-radius: 7px;
