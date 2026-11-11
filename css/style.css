@@ -387,6 +387,15 @@ img { max-width: 100%; display: block; height: auto; }
 .btn-audio:hover { background: var(--primary); color: #fff; border-color: var(--primary); box-shadow: 0 0 0 5px var(--primary-glow); transform: rotate(15deg) scale(1.05); }
 .btn-audio:disabled { opacity: 0.5; cursor: not-allowed; transform: none; }
 
+/* Controles de audio en modal */
+.audio-controls { display: flex; gap: 0.5rem; align-items: center; }
+.btn-audio-settings { width: 38px; height: 38px; border-radius: 10px; background: var(--surface-hover); border: 1px solid var(--border-strong); color: var(--text); font-size: 1.1rem; display: grid; place-items: center; transition: var(--transition); }
+.btn-audio-settings:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+.audio-settings { display: none; grid-template-columns: 1fr auto; gap: 0.8rem; margin-top: 0.8rem; padding-top: 0.8rem; border-top: 1px solid var(--border-strong); align-items: center; }
+.audio-setting-row { display: flex; align-items: center; gap: 0.5rem; flex-wrap: wrap; }
+.btn-audio-test { font-size: 0.85rem; padding: 0.55rem 1rem; border-radius: 8px; background: var(--surface-hover); border: 1px solid var(--border-strong); color: var(--text); transition: var(--transition); white-space: nowrap; }
+.btn-audio-test:hover { background: var(--primary); color: #fff; border-color: var(--primary); }
+
 /* Overlay de bloqueo en tarjetas */
 .lesson-lock-overlay {
   position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center;

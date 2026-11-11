@@ -1,6 +1,6 @@
 /* ==========================================
    Coreano. - Aplicación
-   Niveles A1-C2, desbloqueo secuencial, audio multi-navegador
+   Niveles A1-C2, audio mejorado (Google TTS principal)
    ========================================== */
 
 (() => {
@@ -13,7 +13,8 @@
   let synth = window.speechSynthesis || null;
   let voices = [];
   let koreanVoice = null;
-  let audioEnabled = false;
+  let audioRate = 0.9;
+  let preferGoogleTTS = true; // Google TTS suena más natural por defecto
 
   // ---------- DOM ----------
   const $ = (s) => document.querySelector(s);
@@ -45,50 +46,66 @@
     showToast(lang === 'es' ? 'Idioma: Español' : lang === 'en' ? 'Language: English' : '언어: 한국어', 'info');
   });
 
-  // ---------- Audio multi-navegador ----------
+  // ---------- Audio mejorado ----------
   function loadVoices() {
     if (!synth) return;
     voices = synth.getVoices();
     koreanVoice = voices.find(v => v.lang.startsWith('ko')) ||
                   voices.find(v => v.name.toLowerCase().includes('korean')) ||
                   voices.find(v => v.lang.startsWith('ko-KR'));
-    audioEnabled = voices.length > 0;
-    console.log('Voces:', voices.map(v => `${v.name} (${v.lang})`));
-    console.log('Voz coreana:', koreanVoice ? koreanVoice.name : 'N/A');
+    console.log('Voces del sistema:', voices.map(v => `${v.name} (${v.lang})`));
+    console.log('Voz coreana detectada:', koreanVoice ? koreanVoice.name : 'No hay');
   }
 
   if (synth) {
     synth.onvoiceschanged = loadVoices;
     loadVoices();
-    // Si ya hay voces cargadas
     if (synth.getVoices().length > 0) loadVoices();
   }
 
-  // Fallback Google Translate TTS (funciona en Brave, Chrome, Edge, Firefox, Safari)
+  // Google TTS - suena más natural y consistente en todos los navegadores
   function speakGoogleTTS(text) {
     const url = 'https://translate.google.com/translate_tts?' +
       new URLSearchParams({ ie: 'UTF-8', q: text, tl: 'ko', client: 'tw-ob', textlen: text.length });
     const audio = new Audio(url);
-    audio.play().catch(() => {});
+    audio.play().catch(() => {
+      showToast('No se pudo reproducir el audio', 'warn');
+    });
   }
 
-  function speak(text, rate = 1.0) {
-    if (!text) return;
-    // Intento 1: Web Speech API (Chrome, Edge, Safari, Brave)
-    if (synth && koreanVoice) {
-      try {
-        window.speechSynthesis.cancel();
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = 'ko-KR';
-        u.rate = rate;
-        u.volume = 1;
-        u.voice = koreanVoice;
-        synth.speak(u);
-        return;
-      } catch (e) { console.warn('Web Speech falló:', e); }
+  // Web Speech API - voz del sistema
+  function speakSystemTTS(text, rate) {
+    if (!synth || !koreanVoice) return false;
+    try {
+      window.speechSynthesis.cancel();
+      const u = new SpeechSynthesisUtterance(text);
+      u.lang = 'ko-KR';
+      u.rate = rate;
+      u.volume = 1;
+      u.voice = koreanVoice;
+      synth.speak(u);
+      return true;
+    } catch (e) {
+      console.warn('Web Speech falló:', e);
+      return false;
     }
-    // Intento 2: Google Translate TTS (todos los navegadores)
-    speakGoogleTTS(text);
+  }
+
+  function speak(text, rate = null) {
+    if (!text) return;
+    const r = rate !== null ? rate : audioRate;
+
+    // Método 1: Google TTS (más natural, recomendado)
+    if (preferGoogleTTS) {
+      speakGoogleTTS(text);
+      return;
+    }
+
+    // Método 2: Web Speech API (voz del sistema)
+    const success = speakSystemTTS(text, r);
+    if (!success) {
+      speakGoogleTTS(text);
+    }
   }
 
   // ---------- Utilidades ----------
@@ -113,13 +130,13 @@
   // ---------- Nivel desbloqueado ----------
   function isLevelUnlocked(levelKey) {
     const lv = LEVELS[levelKey];
-    if (!lv || !lv.unlockAfter) return true; // A1 siempre desbloqueado
+    if (!lv || !lv.unlockAfter) return true;
     const prev = LEVELS[lv.unlockAfter];
     if (!prev) return true;
     const prevLessons = LESSONS.filter(l => l.level === lv.unlockAfter);
     if (prevLessons.length === 0) return true;
     const donePrev = prevLessons.filter(l => completed.has(l.id)).length;
-    return donePrev >= prevLessons.length; // 100% del nivel anterior
+    return donePrev >= prevLessons.length;
   }
 
   function getLevelProgress(levelKey) {
@@ -142,7 +159,6 @@
       const done = completed.has(lesson.id);
       const lv = LEVELS[lesson.level];
       const unlocked = isLevelUnlocked(lesson.level);
-      const prog = getLevelProgress(lesson.level);
 
       const card = document.createElement('article');
       card.className = 'lesson-card' + (done ? ' done' : '') + (unlocked ? '' : ' locked');
@@ -233,7 +249,58 @@
   modalOverlay.addEventListener('click', (e) => { if (e.target === modalOverlay) closeModal(); });
   document.addEventListener('keydown', (e) => { if (e.key === 'Escape' && modalOverlay.classList.contains('open')) closeModal(); });
 
-  modalAudio.addEventListener('click', () => { speak(currentLessonAudioText || modalTitle.textContent, 0.9); });
+  modalAudio.addEventListener('click', () => {
+    speak(currentLessonAudioText || modalTitle.textContent, 0.9);
+  });
+
+  // ---------- Controles de audio ----------
+  const audioSettingsBtn = $('#modal-audio-settings');
+  const audioSettingsPanel = $('#audio-settings');
+  const audioEngineSelect = $('#audio-engine');
+  const audioRateInput = $('#audio-rate');
+  const audioRateVal = $('#audio-rate-val');
+  const audioTestBtn = $('#audio-test-btn');
+
+  // Cargar preferencias guardadas
+  const savedEngine = localStorage.getItem('coreano-audio-engine');
+  const savedRate = localStorage.getItem('coreano-audio-rate');
+  if (savedEngine) {
+    preferGoogleTTS = savedEngine === 'google';
+    audioEngineSelect.value = savedEngine;
+  }
+  if (savedRate) {
+    audioRate = parseFloat(savedRate);
+    audioRateInput.value = savedRate;
+    audioRateVal.textContent = savedRate + 'x';
+  }
+
+  audioSettingsBtn.addEventListener('click', () => {
+    const isHidden = audioSettingsPanel.style.display === 'none';
+    audioSettingsPanel.style.display = isHidden ? 'grid' : 'none';
+  });
+
+  audioEngineSelect.addEventListener('change', () => {
+    preferGoogleTTS = audioEngineSelect.value === 'google';
+    localStorage.setItem('coreano-audio-engine', audioEngineSelect.value);
+    showToast(preferGoogleTTS ? 'Motor: Google (más natural)' : 'Motor: Voz del sistema', 'info');
+  });
+
+  audioRateInput.addEventListener('input', () => {
+    audioRate = parseFloat(audioRateInput.value);
+    audioRateVal.textContent = audioRate + 'x';
+    localStorage.setItem('coreano-audio-rate', audioRateInput.value);
+  });
+
+  audioTestBtn.addEventListener('click', () => {
+    speak(currentLessonAudioText || modalTitle.textContent, audioRate);
+  });
+
+  // Cerrar panel de audio al cerrar modal
+  const originalCloseModal = closeModal;
+  closeModal = function() {
+    audioSettingsPanel.style.display = 'none';
+    originalCloseModal();
+  };
 
   modalMarkDone.addEventListener('click', () => {
     if (currentLessonId === null) return;
@@ -244,8 +311,6 @@
       completed.add(currentLessonId);
       localStorage.setItem('coreano-completed', JSON.stringify([...completed]));
       showToast(lang === 'es' ? '¡Lección completada! 🎉' : lang === 'en' ? 'Lesson completed! 🎉' : '레슨 완료! 🎉', 'success');
-
-      // Verificar si se desbloqueó un nuevo nivel
       checkLevelUnlock();
     }
     renderLessons();
