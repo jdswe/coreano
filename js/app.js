@@ -150,7 +150,7 @@
         <div class="lesson-tag" style="background:rgba(0,0,0,0.55);color:${lv.color};border:1px solid rgba(${hexToRgb(lv.color)},0.5);">
           ${labelFor(lesson.level)}
         </div>
-        ${!unlocked ? '<div style="position:absolute;inset:0;display:flex;flex-direction:column;align-items:center;justify-content:center;background:rgba(0,0,0,0.7);z-index:2;pointer-events:none;"><div style="font-size:2rem;">🔒</div><div style="font-size:0.75rem;color:#fff;margin-top:0.4rem;">Bloqueado</div></div>' : ''}
+        ${!unlocked ? '<div class="lesson-lock-overlay"><div class="lock-icon">🔒</div><div class="lock-text">' + t('lock.level') + '<br>' + t('lock.complete_prev') + '</div></div>' : ''}
         <div style="font-size:0.72rem;font-weight:800;text-transform:uppercase;letter-spacing:0.6px;color:var(--text-muted);margin-bottom:0.35rem; z-index:1; position:relative;">${escapeHtml(lesson.category)}</div>
         <div style="font-family:'Nanum Gothic',sans-serif;font-size:1.35rem;font-weight:800;color:var(--text);margin:0 0 0.4rem;line-height:1.25; z-index:1; position:relative;">${escapeHtml(lesson.title)}</div>
         <div style="font-size:0.9rem;color:var(--warning);font-weight:700;margin-bottom:0.6rem; z-index:1; position:relative;">${escapeHtml(lesson.roman)}</div>
