@@ -11,9 +11,9 @@
   --surface-hover: #1e2a47;
   --text: #ffffff;
   --text-muted: #b8c4d6;
-  --primary: #8b5cf6;
-  --primary-hover: #7c3aed;
-  --primary-glow: rgba(139, 92, 246, 0.4);
+  --primary: #a78bfa;
+  --primary-hover: #8b5cf6;
+  --primary-glow: rgba(167, 139, 250, 0.4);
   --accent: #22d3ee;
   --accent-hover: #06b6d4;
   --danger: #f87171;
@@ -32,9 +32,9 @@
   --surface-hover: #f1f5f9;
   --text: #0f172a;
   --text-muted: #475569;
-  --primary: #6d28d9;
-  --primary-hover: #5b21b6;
-  --primary-glow: rgba(109, 40, 217, 0.25);
+  --primary: #7c3aed;
+  --primary-hover: #6d28d9;
+  --primary-glow: rgba(124, 58, 237, 0.2);
   --accent: #0891b2;
   --accent-hover: #0c85a4;
   --danger: #dc2626;
@@ -42,7 +42,7 @@
   --warning: #d97706;
   --border: #cbd5e1;
   --border-strong: #94a3b8;
-  --shadow: 0 20px 40px -10px rgba(0,0,0,0.1);
+  --shadow: 0 20px 40px -10px rgba(0,0,0,0.08);
 }
 
 /* Prevenir scroll horizontal en todo el sitio */
@@ -189,6 +189,22 @@ img { max-width: 100%; display: block; height: auto; }
 }
 .lang-btn:not(.active):hover {
   color: var(--text); background: var(--surface-hover); border-color: var(--border-strong);
+}
+
+.theme-toggle {
+  width: 44px; height: 44px; border-radius: 11px;
+  background: var(--surface-hover);
+  border: 1.5px solid var(--border-strong);
+  color: var(--text);
+  font-size: 1.2rem;
+  display: flex; align-items: center; justify-content: center;
+  transition: var(--transition);
+}
+.theme-toggle:hover {
+  background: var(--surface);
+  border-color: var(--accent);
+  color: var(--accent);
+  transform: rotate(15deg);
 }
 
 .nav-toggle {

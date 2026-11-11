@@ -511,6 +511,29 @@
     });
   }
 
+  // ---------- Dark/Light Mode ----------
+  const themeToggle = $('#theme-toggle');
+  const savedTheme = localStorage.getItem('coreano-theme') || 'dark';
+  
+  function setTheme(theme) {
+    if (theme === 'light') {
+      document.documentElement.setAttribute('data-theme', 'light');
+      themeToggle.textContent = '☀️';
+      localStorage.setItem('coreano-theme', 'light');
+    } else {
+      document.documentElement.removeAttribute('data-theme');
+      themeToggle.textContent = '🌙';
+      localStorage.setItem('coreano-theme', 'dark');
+    }
+  }
+
+  setTheme(savedTheme);
+
+  themeToggle.addEventListener('click', () => {
+    const isLight = document.documentElement.getAttribute('data-theme') === 'light';
+    setTheme(isLight ? 'dark' : 'light');
+  });
+
   // ---------- Inicialización ----------
   const yearEl = $('#footer-year');
   if (yearEl) yearEl.textContent = new Date().getFullYear();
